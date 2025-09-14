@@ -1,0 +1,52 @@
+name: kermes
+description: Leitor de mangás
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP para chamadas API
+  http: ^1.2.2
+
+  # Manipulação de imagens
+  image: ^4.5.4
+
+  # Diretórios locais
+  path_provider: ^2.1.4
+
+  # WebView para fontes externas
+  webview_flutter: ^4.13.0
+  webview_flutter_android: ^4.10.2
+  webview_flutter_wkwebview: ^3.12.0
+
+  # Parser HTML para scraping (se necessário)
+  html: ^0.15.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Linters
+  flutter_lints: ^6.0.0
+
+  # Ícones automáticos
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logo.png
+
+# Configuração para gerar ícones
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#DC143C" # vermelho carmesim
+  adaptive_icon_foreground: "assets/logo.png"
