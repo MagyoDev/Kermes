@@ -7,7 +7,6 @@ class MangaMeta {
   final bool rightToLeft;
   final String? coverUrl;
 
-  /// Descrições por idioma. Ex.: {"en": "...", "pt": "...", "pt-br": "..."}
   final Map<String, String> descriptions;
 
   MangaMeta({
@@ -168,8 +167,8 @@ class ChapterMeta {
 class LibraryIndex {
   MangaMeta meta;
   List<ChapterMeta> chapters;
-  Set<String> favorites;         // mangás
-  Set<String> favoriteChapters;  // 🔹 capítulos
+  Set<String> favorites;         
+  Set<String> favoriteChapters;  
 
   LibraryIndex({
     required this.meta,
@@ -184,7 +183,7 @@ class LibraryIndex {
         'meta': meta.toJson(),
         'chapters': chapters.map((c) => c.toJson()).toList(),
         'favorites': favorites.toList(),
-        'favoriteChapters': favoriteChapters.toList(), // 🔹 salva
+        'favoriteChapters': favoriteChapters.toList(), 
       };
 
   factory LibraryIndex.fromJson(Map<String, dynamic> m) => LibraryIndex(
@@ -196,6 +195,6 @@ class LibraryIndex {
             (m['favorites'] as List?)?.cast<String>().toSet() ?? <String>{},
         favoriteChapters:
             (m['favoriteChapters'] as List?)?.cast<String>().toSet() ??
-                <String>{}, // 🔹 carrega
+                <String>{}, 
       );
 }

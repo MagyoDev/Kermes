@@ -138,7 +138,7 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
             : Column(
                 key: const ValueKey("content"),
                 children: [
-                  // 🔹 Barra de busca estilizada
+                  // Barra de busca estilizada
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                     child: TextField(

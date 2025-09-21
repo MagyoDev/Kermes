@@ -22,7 +22,7 @@ class _CatalogPageState extends State<CatalogPage> {
   bool _hasMore = true;
   int _page = 1;
 
-  final String _lang = 'en'; // 🔹 fixo em inglês
+  final String _lang = 'en'; 
   String _order = 'followedCount';
 
   @override
@@ -105,7 +105,7 @@ class _CatalogPageState extends State<CatalogPage> {
               title: Text(
                 "Catálogo",
                 style: texts.titleLarge!.copyWith(
-                  color: colors.onPrimary, // 🔹 sempre visível na AppBar
+                  color: colors.onPrimary, 
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -156,7 +156,7 @@ class _CatalogPageState extends State<CatalogPage> {
           : null,
       body: Column(
         children: [
-          // 🔹 Barra de pesquisa
+          // Barra de pesquisa
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
             child: TextField(
@@ -186,7 +186,7 @@ class _CatalogPageState extends State<CatalogPage> {
 
           const SizedBox(height: 4),
 
-          // 🔹 Grid com resultados
+          // Grid com resultados
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
@@ -269,7 +269,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  // 🔹 Mantém altura fixa para alinhar todos
+                                  // Mantém altura fixa para alinhar todos
                                   SizedBox(
                                     height: 34,
                                     child: Text(

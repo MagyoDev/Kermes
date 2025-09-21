@@ -14,7 +14,7 @@ import 'models/models.dart';
 import 'widgets/theme_provider.dart';
 
 void main() {
-  // 🔹 Inicializa API padrão
+  // Inicializa API padrão
   DownloadManager.instance.api = MangaDexClient();
 
   runApp(
@@ -36,12 +36,12 @@ class KermesApp extends StatelessWidget {
       title: 'Kermes',
       debugShowCheckedModeBanner: false,
 
-      // 🔹 Temas do ThemeProvider (já com cores, hovers, erros, success etc.)
+      // Temas do ThemeProvider 
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
       themeMode: themeProvider.themeMode,
 
-      // 🔹 Rotas principais
+      // Rotas principais
       initialRoute: '/',
       routes: {
         '/': (_) => const HomePage(),
@@ -50,7 +50,7 @@ class KermesApp extends StatelessWidget {
         '/settings': (_) => const SettingsPage(),
       },
 
-      // 🔹 Rotas dinâmicas
+      // Rotas dinâmicas
       onGenerateRoute: (settings) {
         if (settings.name == '/detail' && settings.arguments is String) {
           final mangaId = settings.arguments as String;
@@ -72,7 +72,7 @@ class KermesApp extends StatelessWidget {
           }
         }
 
-        // 🔹 Fallback
+        // Fallback
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
             body: Center(child: Text("Rota não encontrada")),

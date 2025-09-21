@@ -14,7 +14,7 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🔹 Paleta base
+  // Paleta base
   static const Color primary = Color(0xFFDC143C); // Crimson
   static const Color secondary = Color(0xFFB11030); // Detalhes
   static const Color accentBlue = Color(0xFF007AFF); // Links, destaques
@@ -23,7 +23,7 @@ class ThemeProvider extends ChangeNotifier {
   static const Color error = Color(0xFFFF3B30); // Erro
   static const Color info = Color(0xFF17A2B8); // Informativo
 
-  // 🔹 Tons de superfície e texto
+  // Tons de superfície e texto
   static const Color surfaceLight = Colors.white;
   static const Color surfaceDark = Color(0xFF1E1E1E);
   static const Color textLight = Color(0xFF1E1E1E);
@@ -31,7 +31,7 @@ class ThemeProvider extends ChangeNotifier {
 
   static const Color hover = Color(0xFFFF5C77);
 
-  /// 🔹 Tipografia base (pode trocar fonte depois, ex: GoogleFonts.roboto)
+  /// Tipografia base
   static const TextTheme lightTextTheme = TextTheme(
     displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textLight),
     displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textLight),

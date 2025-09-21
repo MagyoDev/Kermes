@@ -29,7 +29,7 @@ class DownloadManager extends ChangeNotifier {
   bool running = false;
   bool convertWebp = false;
 
-  // 🔹 Novo: progresso e status por capítulo
+  // Novo: progresso e status por capítulo
   final Map<String, double> chapterProgress = {}; // 0.0 → 1.0
   final Map<String, String> chapterStatus = {};   // "Fila", "Baixando", "Concluído", "Erro"
 
@@ -92,7 +92,7 @@ class DownloadManager extends ChangeNotifier {
     }
 
     if (at.baseUrl.isEmpty || at.files.isEmpty) {
-      throw Exception("⚠️ Dados inválidos em atHomeServer para cap. ${t.chapter.id}");
+      throw Exception("Dados inválidos em atHomeServer para cap. ${t.chapter.id}");
     }
 
     final dir = await chapterDir(t.mangaId, t.chapter.labelForFolder());
@@ -125,13 +125,13 @@ class DownloadManager extends ChangeNotifier {
               bytes = img.encodeJpg(decoded, quality: 80);
             }
           } catch (e) {
-            debugPrint("⚠️ Erro convertendo webp: $e");
+            debugPrint("Erro convertendo webp: $e");
           }
         }
 
         await out.writeAsBytes(bytes);
       } catch (e) {
-        debugPrint("⚠️ Erro ao baixar página ${i + 1}/$total do cap. ${t.chapter.id}: $e");
+        debugPrint("Erro ao baixar página ${i + 1}/$total do cap. ${t.chapter.id}: $e");
         chapterStatus[t.chapter.id] = "Erro";
       }
 
@@ -139,7 +139,7 @@ class DownloadManager extends ChangeNotifier {
       notifyListeners();
     }
 
-    // 🔹 Atualiza índice local
+    // Atualiza índice local
     final idx = await loadIndex(t.mangaId);
 
     if (idx.meta.title == 'Sem título' || idx.meta.author == null) {
@@ -148,7 +148,7 @@ class DownloadManager extends ChangeNotifier {
             await client.fetchMangaMeta(t.mangaId, lang: idx.meta.lang);
         idx.meta = fullMeta;
       } catch (e) {
-        debugPrint("⚠️ Falha ao atualizar meta: $e");
+        debugPrint("Falha ao atualizar meta: $e");
       }
     }
 

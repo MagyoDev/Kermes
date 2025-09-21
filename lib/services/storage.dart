@@ -19,7 +19,7 @@ Future<LibraryIndex> loadIndex(String mangaId, {MangaMeta? seed}) async {
       final j = jsonDecode(await f.readAsString());
       final idx = LibraryIndex.fromJson(j);
 
-      // 🔹 recria capítulos garantindo lang válido
+      // recria capítulos garantindo lang válido
       idx.chapters = idx.chapters.map((c) {
         return ChapterMeta(
           id: c.id,
@@ -35,7 +35,7 @@ Future<LibraryIndex> loadIndex(String mangaId, {MangaMeta? seed}) async {
 
       return idx;
     } catch (e) {
-      print("⚠️ Erro ao carregar índice $mangaId: $e");
+      print("Erro ao carregar índice $mangaId: $e");
       try {
         await f.rename('${f.path}.corrupted');
       } catch (_) {}
@@ -49,7 +49,7 @@ Future<void> saveIndex(String mangaId, LibraryIndex idx) async {
   await f.writeAsString(jsonEncode(idx.toJson()), flush: true);
 }
 
-/// 🔹 Lista todos os índices (mangás salvos na biblioteca)
+/// Lista todos os índices (mangás salvos na biblioteca)
 Future<List<LibraryIndex>> listIndexes() async {
   final dir = await appDir();
   final files = (await dir.list().toList())
@@ -62,7 +62,7 @@ Future<List<LibraryIndex>> listIndexes() async {
       final j = jsonDecode(await f.readAsString());
       final idx = LibraryIndex.fromJson(j);
 
-      // 🔹 recria capítulos garantindo lang válido
+      // recria capítulos garantindo lang válido
       idx.chapters = idx.chapters.map((c) {
         return ChapterMeta(
           id: c.id,
@@ -78,12 +78,12 @@ Future<List<LibraryIndex>> listIndexes() async {
 
       result.add(idx);
     } catch (e) {
-      print("⚠️ Erro ao ler ${f.path}: $e");
+      print("Erro ao ler ${f.path}: $e");
       continue;
     }
   }
 
-  // 🔹 Ordena por título (UX melhor)
+  // Ordena por título 
   result.sort((a, b) => a.meta.title.compareTo(b.meta.title));
   return result;
 }

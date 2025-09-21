@@ -1,9 +1,8 @@
 import '../models/models.dart';
 
-/// 🔹 Interface genérica para qualquer cliente de catálogo de mangás
 abstract class MangaSourceClient {
-  String get key;   // identificador único da fonte
-  String get label; // nome legível da fonte
+  String get key;   
+  String get label; 
 
   Future<List<MangaMeta>> listPopular({int page = 1});
   Future<List<MangaMeta>> search(String query, {int page = 1});
@@ -16,7 +15,6 @@ abstract class MangaSourceClient {
   Future<MdAtHome> atHomeServer(String chapterId);
 }
 
-/// 🔹 Representa um capítulo obtido da API
 class MdChapter {
   final String id;
   final String? chapter;
@@ -30,7 +28,6 @@ class MdChapter {
     required this.lang,
   });
 
-  /// Nome seguro para salvar no disco (ex.: `ch_0005` ou `ch_12_5`)
   String labelForFolder() {
     final ch = (chapter ?? '').trim();
     final numVal = double.tryParse(ch);
@@ -52,7 +49,6 @@ class MdChapter {
       'MdChapter(id: $id, chapter: $chapter, title: $title, lang: $lang)';
 }
 
-/// 🔹 Servidor AtHome (onde as imagens do capítulo ficam hospedadas)
 class MdAtHome {
   final String baseUrl;
   final String hash;

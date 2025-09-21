@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     final texts = Theme.of(context).textTheme;
 
     return Scaffold(
-      // 🔹 troca com animação suave (fade + slide)
+      // troca com animação suave (fade + slide)
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 350),
         transitionBuilder: (child, animation) {

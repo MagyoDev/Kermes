@@ -95,7 +95,7 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
         _visibleCount = _pageSize;
       });
     } catch (e) {
-      debugPrint("⚠️ Erro em _load: $e");
+      debugPrint("Erro em _load: $e");
       setState(() => _loading = false);
     }
   }
@@ -158,7 +158,7 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
     await saveIndex(widget.mangaId, _index!);
   }
 
-  /// 🔹 Detalhes modernizados
+  /// Detalhes modernizados
   void _showDetails(MangaMeta meta) {
     final colors = Theme.of(context).colorScheme;
 

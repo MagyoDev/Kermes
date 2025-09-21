@@ -18,7 +18,7 @@ class SettingsPage extends StatelessWidget {
       ),
       body: ListView(
         children: [
-          // 🔹 Modo escuro
+          // Modo escuro
           SwitchListTile(
             title: const Text("Modo escuro"),
             subtitle: const Text("Ativa/desativa o tema noturno do app"),
@@ -39,7 +39,7 @@ class SettingsPage extends StatelessWidget {
             },
           ),
 
-          // 🔹 Tema do sistema
+          // Tema do sistema
           ListTile(
             leading: Icon(Icons.settings_brightness, color: colors.secondary),
             title: const Text("Seguir tema do sistema"),
@@ -58,7 +58,7 @@ class SettingsPage extends StatelessWidget {
 
           const Divider(),
 
-          // 🔹 Seção Sobre
+          // Seção Sobre
           ListTile(
             leading: Icon(Icons.info_outline, color: colors.secondary),
             title: const Text("Sobre"),
