@@ -31,6 +31,33 @@ class ThemeProvider extends ChangeNotifier {
 
   static const Color hover = Color(0xFFFF5C77);
 
+  /// 🔹 Tipografia base (pode trocar fonte depois, ex: GoogleFonts.roboto)
+  static const TextTheme lightTextTheme = TextTheme(
+    displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textLight),
+    displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textLight),
+    displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textLight),
+    headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textLight),
+    headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textLight),
+    titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textLight),
+    bodyLarge: TextStyle(fontSize: 14, color: textLight, height: 1.4),
+    bodyMedium: TextStyle(fontSize: 13, color: textLight, height: 1.4),
+    bodySmall: TextStyle(fontSize: 12, color: Colors.grey),
+    labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primary),
+  );
+
+  static const TextTheme darkTextTheme = TextTheme(
+    displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: textDark),
+    displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: textDark),
+    displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textDark),
+    headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: textDark),
+    headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textDark),
+    titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textDark),
+    bodyLarge: TextStyle(fontSize: 14, color: textDark, height: 1.4),
+    bodyMedium: TextStyle(fontSize: 13, color: textDark, height: 1.4),
+    bodySmall: TextStyle(fontSize: 12, color: Colors.grey),
+    labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: primary),
+  );
+
   ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
@@ -48,6 +75,7 @@ class ThemeProvider extends ChangeNotifier {
           background: Colors.grey.shade100,
           onBackground: textLight,
         ),
+        textTheme: lightTextTheme,
         appBarTheme: const AppBarTheme(
           backgroundColor: primary,
           foregroundColor: Colors.white,
@@ -105,6 +133,7 @@ class ThemeProvider extends ChangeNotifier {
           background: Colors.black,
           onBackground: textDark,
         ),
+        textTheme: darkTextTheme,
         appBarTheme: const AppBarTheme(
           backgroundColor: surfaceDark,
           foregroundColor: textDark,

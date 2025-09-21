@@ -97,11 +97,18 @@ class _CatalogPageState extends State<CatalogPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final texts = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text("Catálogo"),
+              title: Text(
+                "Catálogo",
+                style: texts.titleLarge!.copyWith(
+                  color: colors.onPrimary, // 🔹 sempre visível na AppBar
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               backgroundColor: colors.primary,
               foregroundColor: colors.onPrimary,
               actions: [
@@ -126,17 +133,20 @@ class _CatalogPageState extends State<CatalogPage> {
                     PopupMenuItem(
                       value: 'popular',
                       child: Text("Popular",
-                          style: TextStyle(color: colors.onSurface)),
+                          style: texts.bodyMedium!
+                              .copyWith(color: colors.onSurface)),
                     ),
                     PopupMenuItem(
                       value: 'recent',
                       child: Text("Recent",
-                          style: TextStyle(color: colors.onSurface)),
+                          style: texts.bodyMedium!
+                              .copyWith(color: colors.onSurface)),
                     ),
                     PopupMenuItem(
                       value: 'updated',
                       child: Text("Updated",
-                          style: TextStyle(color: colors.onSurface)),
+                          style: texts.bodyMedium!
+                              .copyWith(color: colors.onSurface)),
                     ),
                   ],
                   icon: Icon(Icons.sort, color: colors.onPrimary),
@@ -146,18 +156,27 @@ class _CatalogPageState extends State<CatalogPage> {
           : null,
       body: Column(
         children: [
-          // 🔹 Search bar
+          // 🔹 Barra de pesquisa
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
             child: TextField(
+              style: texts.bodyLarge,
               decoration: InputDecoration(
+                hintText: "Buscar mangá...",
+                hintStyle: texts.bodyMedium!
+                    .copyWith(color: colors.onSurfaceVariant),
                 prefixIcon: Icon(Icons.search, color: colors.primary),
-                hintText: "Search manga...",
                 filled: true,
-                fillColor: colors.surfaceVariant,
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: colors.outline),
-                  borderRadius: BorderRadius.circular(8),
+                fillColor: colors.surfaceVariant.withOpacity(0.6),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: colors.outline.withOpacity(0.5)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: colors.primary, width: 1.6),
                 ),
               ),
               onChanged: (s) => _query = s,
@@ -167,7 +186,7 @@ class _CatalogPageState extends State<CatalogPage> {
 
           const SizedBox(height: 4),
 
-          // 🔹 Grid with results
+          // 🔹 Grid com resultados
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
@@ -176,7 +195,8 @@ class _CatalogPageState extends State<CatalogPage> {
                       key: const ValueKey("empty"),
                       child: Text(
                         "Nenhum mangá encontrado",
-                        style: TextStyle(color: colors.error),
+                        style: texts.bodyMedium!
+                            .copyWith(color: colors.error),
                       ),
                     )
                   : GridView.builder(
@@ -206,7 +226,7 @@ class _CatalogPageState extends State<CatalogPage> {
                           tween: Tween(begin: 1, end: 1),
                           builder: (context, scale, child) {
                             return InkWell(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                               hoverColor: colors.secondary.withOpacity(0.08),
                               onTap: () => _openDetail(m),
                               child: Column(
@@ -216,16 +236,14 @@ class _CatalogPageState extends State<CatalogPage> {
                                     child: Hero(
                                       tag: m.id,
                                       child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(10),
                                         child: m.coverUrl != null
                                             ? Image.network(
                                                 m.coverUrl!,
                                                 fit: BoxFit.cover,
                                                 errorBuilder: (_, __, ___) =>
-                                                    Icon(
-                                                  Icons.error,
-                                                  color: colors.error,
-                                                ),
+                                                    Icon(Icons.error,
+                                                        color: colors.error),
                                                 loadingBuilder:
                                                     (context, child, progress) {
                                                   if (progress == null) {
@@ -250,18 +268,18 @@ class _CatalogPageState extends State<CatalogPage> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 6),
+                                  // 🔹 Mantém altura fixa para alinhar todos
                                   SizedBox(
-                                    height: 32,
+                                    height: 34,
                                     child: Text(
                                       m.title,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        height: 1.2,
+                                      style: texts.bodySmall!.copyWith(
                                         color: colors.onSurface,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ),

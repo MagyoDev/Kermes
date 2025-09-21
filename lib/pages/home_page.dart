@@ -28,15 +28,35 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final texts = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: _pages[_selectedIndex], // 🔹 troca direta, sem animação de tela
+      // 🔹 troca com animação suave (fade + slide)
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        transitionBuilder: (child, animation) {
+          final slide = Tween<Offset>(
+            begin: const Offset(0.05, 0), // entra levemente da direita
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          ));
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(position: slide, child: child),
+          );
+        },
+        child: _pages[_selectedIndex],
+      ),
+
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         backgroundColor: colors.surface,
-        indicatorColor: Colors.transparent, // 🔹 sem fundo atrás do ícone
-        animationDuration: const Duration(milliseconds: 250), // animação só nos ícones
+        indicatorColor: Colors.transparent, // 🔹 sem bolha de fundo
+        animationDuration: const Duration(milliseconds: 250),
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: [
           NavigationDestination(
             icon: Icon(Icons.explore, color: colors.onSurfaceVariant),

@@ -36,12 +36,14 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
 
   Future<void> _delete(String mangaId) async {
     final colors = Theme.of(context).colorScheme;
+    final texts = Theme.of(context).textTheme;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Confirmar exclusão"),
-        content: const Text("Deseja remover este mangá da biblioteca?"),
+        title: Text("Confirmar exclusão", style: texts.titleMedium),
+        content: Text("Deseja remover este mangá da biblioteca?",
+            style: texts.bodyMedium),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -76,6 +78,7 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final texts = Theme.of(context).textTheme;
 
     var filtered = _items
         .where((i) => i.meta.title.toLowerCase().contains(_query.toLowerCase()))
@@ -94,7 +97,13 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
     return Scaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text("Biblioteca"),
+              title: Text(
+                "Biblioteca",
+                style: texts.titleLarge!.copyWith(
+                  color: colors.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               backgroundColor: colors.primary,
               foregroundColor: colors.onPrimary,
               actions: [
@@ -129,17 +138,30 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
             : Column(
                 key: const ValueKey("content"),
                 children: [
+                  // 🔹 Barra de busca estilizada
                   Padding(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                     child: TextField(
+                      style: texts.bodyLarge,
                       decoration: InputDecoration(
                         hintText: "Buscar mangá...",
-                        filled: true,
-                        fillColor: colors.surfaceVariant,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        hintStyle: texts.bodyMedium!
+                            .copyWith(color: colors.onSurfaceVariant),
                         prefixIcon: Icon(Icons.search, color: colors.primary),
+                        filled: true,
+                        fillColor: colors.surfaceVariant.withOpacity(0.6),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: colors.outline.withOpacity(0.5)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: colors.primary, width: 1.6),
+                        ),
                       ),
                       onChanged: (s) => setState(() => _query = s),
                     ),
@@ -154,14 +176,15 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
                                 _showFavorites
                                     ? "Nenhum favorito encontrado."
                                     : "Nenhum mangá encontrado.",
-                                style: TextStyle(color: colors.error),
+                                style: texts.bodyMedium!
+                                    .copyWith(color: colors.error),
                               ),
                             )
                           : ListView.separated(
                               physics: const AlwaysScrollableScrollPhysics(),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  Divider(height: 1, color: colors.outline),
+                              separatorBuilder: (_, __) => Divider(
+                                  height: 1, color: colors.outline.withOpacity(0.4)),
                               itemBuilder: (_, i) {
                                 final idx = filtered[i];
                                 final downloadedCount = idx.chapters
@@ -209,13 +232,16 @@ class _GlobalLibraryPageState extends State<GlobalLibraryPage> {
                                         idx.meta.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            color: colors.onSurface),
+                                        style: texts.bodyLarge!.copyWith(
+                                          color: colors.onSurface,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                       subtitle: Text(
                                         "$downloadedCount capítulos baixados • Idioma: ${idx.meta.lang}",
-                                        style: TextStyle(
-                                            color: colors.onSurfaceVariant),
+                                        style: texts.bodySmall!.copyWith(
+                                          color: colors.onSurfaceVariant,
+                                        ),
                                       ),
                                       trailing: IconButton(
                                         icon: Icon(Icons.delete,
