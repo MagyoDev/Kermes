@@ -96,12 +96,17 @@ class _CatalogPageState extends State<CatalogPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text("Catálogo"),
+              backgroundColor: colors.primary,
+              foregroundColor: colors.onPrimary,
               actions: [
                 PopupMenuButton<String>(
+                  color: colors.surface,
                   onSelected: (value) {
                     setState(() {
                       switch (value) {
@@ -117,12 +122,24 @@ class _CatalogPageState extends State<CatalogPage> {
                     });
                     _fetch(reset: true);
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'popular', child: Text("Popular")),
-                    PopupMenuItem(value: 'recent', child: Text("Recent")),
-                    PopupMenuItem(value: 'updated', child: Text("Updated")),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'popular',
+                      child: Text("Popular",
+                          style: TextStyle(color: colors.onSurface)),
+                    ),
+                    PopupMenuItem(
+                      value: 'recent',
+                      child: Text("Recent",
+                          style: TextStyle(color: colors.onSurface)),
+                    ),
+                    PopupMenuItem(
+                      value: 'updated',
+                      child: Text("Updated",
+                          style: TextStyle(color: colors.onSurface)),
+                    ),
                   ],
-                  icon: const Icon(Icons.sort),
+                  icon: Icon(Icons.sort, color: colors.onPrimary),
                 ),
               ],
             )
@@ -133,10 +150,15 @@ class _CatalogPageState extends State<CatalogPage> {
           Padding(
             padding: const EdgeInsets.all(8),
             child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.search, color: colors.primary),
                 hintText: "Search manga...",
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: colors.surfaceVariant,
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: colors.outline),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onChanged: (s) => _query = s,
               onSubmitted: (_) => _fetch(reset: true),
@@ -147,76 +169,110 @@ class _CatalogPageState extends State<CatalogPage> {
 
           // 🔹 Grid with results
           Expanded(
-            child: _items.isEmpty && !_loading
-                ? const Center(child: Text("No manga found"))
-                : GridView.builder(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.all(12),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 0.62,
-                    ),
-                    itemCount: _items.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (_, i) {
-                      if (i >= _items.length) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-                      final m = _items[i];
-                      return InkWell(
-                        onTap: () => _openDetail(m),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: m.coverUrl != null
-                                    ? Image.network(
-                                        m.coverUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            const Icon(Icons.error),
-                                        loadingBuilder:
-                                            (context, child, progress) {
-                                          if (progress == null) return child;
-                                          return const Center(
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 2),
-                                          );
-                                        },
-                                      )
-                                    : Container(
-                                        color: Colors.black12,
-                                        child: const Center(
-                                          child: Icon(Icons.menu_book, size: 40),
-                                        ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: _items.isEmpty && !_loading
+                  ? Center(
+                      key: const ValueKey("empty"),
+                      child: Text(
+                        "Nenhum mangá encontrado",
+                        style: TextStyle(color: colors.error),
+                      ),
+                    )
+                  : GridView.builder(
+                      key: const ValueKey("grid"),
+                      controller: _scrollCtrl,
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 0.62,
+                      ),
+                      itemCount: _items.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (_, i) {
+                        if (i >= _items.length) {
+                          return Center(
+                            child: CircularProgressIndicator(
+                              color: colors.primary,
+                            ),
+                          );
+                        }
+                        final m = _items[i];
+
+                        return TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 300),
+                          tween: Tween(begin: 1, end: 1),
+                          builder: (context, scale, child) {
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              hoverColor: colors.secondary.withOpacity(0.08),
+                              onTap: () => _openDetail(m),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: Hero(
+                                      tag: m.id,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: m.coverUrl != null
+                                            ? Image.network(
+                                                m.coverUrl!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Icon(
+                                                  Icons.error,
+                                                  color: colors.error,
+                                                ),
+                                                loadingBuilder:
+                                                    (context, child, progress) {
+                                                  if (progress == null) {
+                                                    return child;
+                                                  }
+                                                  return Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: colors.primary,
+                                                    ),
+                                                  );
+                                                },
+                                              )
+                                            : Container(
+                                                color: colors.surfaceVariant,
+                                                child: Icon(Icons.menu_book,
+                                                    size: 40,
+                                                    color: colors
+                                                        .onSurfaceVariant),
+                                              ),
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    height: 32,
+                                    child: Text(
+                                      m.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        height: 1.2,
+                                        color: colors.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            SizedBox(
-                              height: 32,
-                              child: Text(
-                                m.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),

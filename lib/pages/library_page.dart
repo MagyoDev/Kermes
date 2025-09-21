@@ -31,6 +31,8 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
     final idx = _index;
     if (idx == null) return;
 
+    final colors = Theme.of(context).colorScheme;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -41,9 +43,14 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
             onPressed: () => Navigator.pop(context, false),
             child: const Text("Cancelar"),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.error,
+              foregroundColor: colors.onError,
+            ),
+            icon: const Icon(Icons.delete),
+            label: const Text("Excluir"),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Excluir"),
           ),
         ],
       ),
@@ -51,13 +58,16 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
 
     if (confirm == true) {
       idx.chapters.removeWhere((c) => c.id == chapterId);
-      idx.favoriteChapters.remove(chapterId); // 🔹 remove dos favoritos também
+      idx.favoriteChapters.remove(chapterId);
       await saveIndex(widget.mangaId, idx);
       await _load();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Capítulo removido")),
+          SnackBar(
+            backgroundColor: colors.errorContainer,
+            content: const Text("Capítulo removido"),
+          ),
         );
       }
     }
@@ -96,6 +106,7 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
   @override
   Widget build(BuildContext context) {
     final idx = _index;
+    final colors = Theme.of(context).colorScheme;
 
     if (idx == null) {
       return const Scaffold(
@@ -117,7 +128,7 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
                     : Icons.star_border,
                 color: idx.favorites.contains(idx.meta.id)
                     ? Colors.amber
-                    : null,
+                    : colors.onPrimary,
               ),
               tooltip: idx.favorites.contains(idx.meta.id)
                   ? "Remover dos favoritos"
@@ -150,7 +161,9 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
               idx.favorites.contains(idx.meta.id)
                   ? Icons.star
                   : Icons.star_border,
-              color: idx.favorites.contains(idx.meta.id) ? Colors.amber : null,
+              color: idx.favorites.contains(idx.meta.id)
+                  ? Colors.amber
+                  : colors.onPrimary,
             ),
             tooltip: idx.favorites.contains(idx.meta.id)
                 ? "Remover dos favoritos"
@@ -158,9 +171,7 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
             onPressed: _toggleFavorite,
           ),
           IconButton(
-            icon: Icon(
-              _orderDesc ? Icons.arrow_downward : Icons.arrow_upward,
-            ),
+            icon: Icon(_orderDesc ? Icons.arrow_downward : Icons.arrow_upward),
             tooltip:
                 _orderDesc ? "Mais novos primeiro" : "Mais antigos primeiro",
             onPressed: () => setState(() => _orderDesc = !_orderDesc),
@@ -168,6 +179,7 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
         ],
       ),
       body: RefreshIndicator(
+        color: colors.primary,
         onRefresh: _load,
         child: ListView(
           children: [
@@ -178,7 +190,7 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: colors.outline),
             ...chapters.map((c) {
               final chapterTitle = c.title != null && c.title!.isNotEmpty
                   ? "Cap. ${c.number ?? ''} - ${c.title}"
@@ -189,7 +201,7 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
               return Dismissible(
                 key: ValueKey(c.id),
                 background: Container(
-                  color: Colors.red,
+                  color: colors.error,
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: const Icon(Icons.delete, color: Colors.white),
@@ -200,16 +212,36 @@ class _LibraryDetailPageState extends State<LibraryDetailPage> {
                   return true;
                 },
                 child: ListTile(
-                  leading: Image.asset("assets/logo.png",
-                      width: 32, height: 32), // 🔹 sua logo
+                  leading: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.primary.withOpacity(0.9),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(Icons.book, color: Colors.white),
+                    ),
+                  ),
                   title: Text(chapterTitle),
                   subtitle: Text("Páginas: ${c.pages}"),
-                  trailing: IconButton(
-                    icon: Icon(
-                      isFavChapter ? Icons.star : Icons.star_border,
-                      color: isFavChapter ? Colors.amber : null,
+                  trailing: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: child,
                     ),
-                    onPressed: () => _toggleChapterFavorite(c.id),
+                    child: IconButton(
+                      key: ValueKey(isFavChapter),
+                      icon: Icon(
+                        isFavChapter ? Icons.star : Icons.star_border,
+                        color: isFavChapter ? Colors.amber : colors.onSurface,
+                      ),
+                      tooltip: isFavChapter
+                          ? "Remover dos favoritos"
+                          : "Favoritar capítulo",
+                      onPressed: () => _toggleChapterFavorite(c.id),
+                    ),
                   ),
                   onTap: () {
                     Navigator.push(

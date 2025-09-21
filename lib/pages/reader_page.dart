@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:visibility_detector/visibility_detector.dart'; // 👈 add essa lib no pubspec.yaml
+import 'package:visibility_detector/visibility_detector.dart';
 import '../models/models.dart';
 import '../services/storage.dart';
 
@@ -32,25 +32,31 @@ class _ReaderPageState extends State<ReaderPage> {
   Future<void> _loadFavorite() async {
     final idx = await loadIndex(widget.mangaId);
     setState(() {
-      _isFavorite = idx.favorites.contains(idx.meta.id);
+      _isFavorite = idx.favoriteChapters.contains(widget.chapter.id);
     });
   }
 
   Future<void> _toggleFavorite() async {
     final idx = await loadIndex(widget.mangaId);
     if (_isFavorite) {
-      idx.favorites.remove(idx.meta.id);
+      idx.favoriteChapters.remove(widget.chapter.id);
     } else {
-      idx.favorites.add(idx.meta.id);
+      idx.favoriteChapters.add(widget.chapter.id);
     }
     await saveIndex(widget.mangaId, idx);
     setState(() => _isFavorite = !_isFavorite);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        backgroundColor: _isFavorite
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.errorContainer,
         content: Text(
-          _isFavorite ? "Adicionado aos favoritos" : "Removido dos favoritos",
+          _isFavorite
+              ? "Capítulo marcado como favorito"
+              : "Capítulo removido dos favoritos",
         ),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -86,15 +92,24 @@ class _ReaderPageState extends State<ReaderPage> {
           break;
       }
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+        content: Text(
+          _mode == ReadingMode.vertical
+              ? "Modo leitura: Vertical"
+              : _mode == ReadingMode.horizontal
+                  ? "Modo leitura: Horizontal"
+                  : "Modo leitura: Dupla página",
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Widget _zoomableImage(File file, {required int index}) {
-    final imageWidget = Image.file(
-      file,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
-    );
-
     return VisibilityDetector(
       key: ValueKey("page_$index"),
       onVisibilityChanged: (info) {
@@ -102,16 +117,25 @@ class _ReaderPageState extends State<ReaderPage> {
           setState(() => _currentPage = index);
         }
       },
-      child: InteractiveViewer(
-        minScale: 0.8,
-        maxScale: 4.0,
-        child: imageWidget,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: InteractiveViewer(
+          key: ValueKey(file.path),
+          minScale: 0.8,
+          maxScale: 4.0,
+          child: Image.file(
+            file,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final chapterTitle = widget.chapter.title != null &&
             widget.chapter.title!.isNotEmpty
         ? "Cap. ${widget.chapter.number ?? ''} - ${widget.chapter.title}"
@@ -119,9 +143,16 @@ class _ReaderPageState extends State<ReaderPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(chapterTitle),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            chapterTitle,
+            key: ValueKey(chapterTitle),
+          ),
+        ),
         actions: [
           IconButton(
+            tooltip: "Alterar modo de leitura",
             icon: Icon(
               _mode == ReadingMode.vertical
                   ? Icons.view_agenda
@@ -132,9 +163,12 @@ class _ReaderPageState extends State<ReaderPage> {
             onPressed: _toggleMode,
           ),
           IconButton(
+            tooltip: _isFavorite
+                ? "Remover dos favoritos"
+                : "Adicionar aos favoritos",
             icon: Icon(
               _isFavorite ? Icons.star : Icons.star_border,
-              color: _isFavorite ? Colors.yellow : null,
+              color: _isFavorite ? Colors.amber : null,
             ),
             onPressed: _toggleFavorite,
           ),
@@ -149,46 +183,49 @@ class _ReaderPageState extends State<ReaderPage> {
 
           final pages = snapshot.data!;
           if (pages.isEmpty) {
-            return const Center(child: Text("Nenhuma página encontrada."));
+            return Center(
+              child: Text(
+                "Nenhuma página encontrada.",
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            );
           }
 
-          Widget progressBar() => Align(
+          Widget progressBar() => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 alignment: Alignment.bottomCenter,
                 child: Container(
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                  child: LinearProgressIndicator(
-                    value: (_currentPage + 1) / pages.length,
-                    backgroundColor: Colors.black12,
-                    color: Colors.blueAccent,
+                  height: 5,
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (_currentPage + 1) / pages.length,
+                      backgroundColor: colors.surfaceVariant,
+                      color: colors.primary,
+                    ),
                   ),
                 ),
               );
 
+          Widget content;
           switch (_mode) {
             case ReadingMode.vertical:
-              return Stack(
-                children: [
-                  ListView.builder(
-                    itemCount: pages.length,
-                    itemBuilder: (_, i) => _zoomableImage(pages[i], index: i),
-                  ),
-                  progressBar(),
-                ],
+              content = ListView.builder(
+                itemCount: pages.length,
+                itemBuilder: (_, i) => _zoomableImage(pages[i], index: i),
               );
+              break;
 
             case ReadingMode.horizontal:
-              return Stack(
-                children: [
-                  PageView.builder(
-                    itemCount: pages.length,
-                    onPageChanged: (i) => setState(() => _currentPage = i),
-                    itemBuilder: (_, i) =>
-                        _zoomableImage(pages[i], index: i),
-                  ),
-                  progressBar(),
-                ],
+              content = PageView.builder(
+                itemCount: pages.length,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                itemBuilder: (_, i) => _zoomableImage(pages[i], index: i),
               );
+              break;
 
             case ReadingMode.doublePage:
               final pairs = <List<File>>[];
@@ -199,28 +236,31 @@ class _ReaderPageState extends State<ReaderPage> {
                       : [pages[i]],
                 );
               }
-              return Stack(
-                children: [
-                  PageView.builder(
-                    itemCount: pairs.length,
-                    onPageChanged: (i) =>
-                        setState(() => _currentPage = i * 2),
-                    itemBuilder: (_, i) {
-                      final p = pairs[i];
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: p
-                            .map((f) => Expanded(
-                                  child: _zoomableImage(f, index: i),
-                                ))
-                            .toList(),
-                      );
-                    },
-                  ),
-                  progressBar(),
-                ],
+              content = PageView.builder(
+                itemCount: pairs.length,
+                onPageChanged: (i) => setState(() => _currentPage = i * 2),
+                itemBuilder: (_, i) {
+                  final p = pairs[i];
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: p
+                        .map((f) => Expanded(child: _zoomableImage(f, index: i)))
+                        .toList(),
+                  );
+                },
               );
+              break;
           }
+
+          return Stack(
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                child: content,
+              ),
+              progressBar(),
+            ],
+          );
         },
       ),
     );

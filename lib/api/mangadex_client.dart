@@ -27,7 +27,6 @@ class MangaDexClient implements MangaSourceClient {
     return "https://uploads.mangadex.org/covers/${d['id']}/$fileName.512.jpg";
   }
 
-  /// 🔹 Pega o último capítulo publicado de um mangá
   Future<MdChapter?> _fetchLastChapter(String mangaId, String lang) async {
     final uri = Uri.parse(
       '$_apiBase/manga/$mangaId/feed?limit=1&translatedLanguage[]=$lang&order[chapter]=desc',
@@ -78,16 +77,14 @@ class MangaDexClient implements MangaSourceClient {
           'Sem título';
 
       final coverUrl = await _getCover(d);
-
-      // 🔹 último capítulo
       final lastChapter = await _fetchLastChapter(d['id'], lang);
 
       return MangaMeta(
         id: d['id'],
         title: title,
         coverUrl: coverUrl,
-        tags: lastChapter != null && lastChapter.chapter != null
-            ? ["Último cap.: ${lastChapter.chapter}"]
+        tags: lastChapter?.chapter != null
+            ? ["Último cap.: ${lastChapter!.chapter}"]
             : [],
       );
     }));
@@ -123,16 +120,14 @@ class MangaDexClient implements MangaSourceClient {
           'Sem título';
 
       final coverUrl = await _getCover(d);
-
-      // 🔹 último capítulo
       final lastChapter = await _fetchLastChapter(d['id'], lang);
 
       return MangaMeta(
         id: d['id'],
         title: title,
         coverUrl: coverUrl,
-        tags: lastChapter != null && lastChapter.chapter != null
-            ? ["Último cap.: ${lastChapter.chapter}"]
+        tags: lastChapter?.chapter != null
+            ? ["Último cap.: ${lastChapter!.chapter}"]
             : [],
       );
     }));
@@ -192,11 +187,9 @@ class MangaDexClient implements MangaSourceClient {
         .toList();
 
     final coverUrl = await _getCover(d);
-
-    // 🔹 pega último capítulo aqui também
     final lastChapter = await _fetchLastChapter(mangaId, lang);
-    if (lastChapter != null && lastChapter.chapter != null) {
-      tags.insert(0, "Último cap.: ${lastChapter.chapter}");
+    if (lastChapter?.chapter != null) {
+      tags.insert(0, "Último cap.: ${lastChapter!.chapter}");
     }
 
     return MangaMeta(
@@ -236,7 +229,6 @@ class MangaDexClient implements MangaSourceClient {
       );
     }).toList();
 
-    // 🔹 remove duplicados
     final seen = <String>{};
     final unique = <MdChapter>[];
     for (final ch in chapters) {
@@ -253,10 +245,22 @@ class MangaDexClient implements MangaSourceClient {
   Future<MdAtHome> atHomeServer(String chapterId) async {
     final uri = Uri.parse('$_apiBase/at-home/server/$chapterId');
     final r = await _http.get(uri).timeout(const Duration(seconds: 20));
-    if (r.statusCode != 200) throw Exception('Erro servidor MangaDex');
+
+    if (r.statusCode != 200) {
+      throw Exception('Erro ${r.statusCode} no servidor MangaDex');
+    }
 
     final j = jsonDecode(r.body) as Map<String, dynamic>;
-    final chapter = j['chapter'] as Map;
+
+    if (j['result'] == 'error') {
+      final errors = j['errors'] ?? [];
+      throw Exception('Erro API MangaDex: $errors');
+    }
+
+    final chapter = j['chapter'] as Map?;
+    if (chapter == null || chapter['data'] == null) {
+      throw Exception('Resposta inválida em atHomeServer($chapterId)');
+    }
 
     return MdAtHome(
       baseUrl: j['baseUrl'],
@@ -283,7 +287,6 @@ class MangaDexClient implements MangaSourceClient {
     }
 
     final j = jsonDecode(r.body) as Map<String, dynamic>;
-    final total = (j['total'] as num?)?.toInt() ?? 0;
-    return total;
+    return (j['total'] as num?)?.toInt() ?? 0;
   }
 }

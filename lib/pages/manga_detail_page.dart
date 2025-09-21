@@ -57,7 +57,8 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
       final client = DownloadManager.instance.api;
       if (client != null) {
         final meta = await client.fetchMangaMeta(widget.mangaId, lang: _lang);
-        final chapters = await client.fetchChapters(widget.mangaId, lang: _lang);
+        final chapters =
+            await client.fetchChapters(widget.mangaId, lang: _lang);
 
         MangaMeta updatedMeta = meta.copyWith(lang: _lang);
         String? desc = meta.getDescription(_lang);
@@ -73,13 +74,15 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
                   number: c.chapter,
                   title: c.title,
                   pages: idx.chapters
-                          .firstWhere((old) => old.id == c.id,
-                              orElse: () => ChapterMeta(
-                                  id: c.id,
-                                  label: c.labelForFolder(),
-                                  pages: 0))
-                          .pages ??
-                      0, // 🔹 mantém páginas já salvas
+                      .firstWhere(
+                        (old) => old.id == c.id,
+                        orElse: () => ChapterMeta(
+                          id: c.id,
+                          label: c.labelForFolder(),
+                          pages: 0,
+                        ),
+                      )
+                      .pages,
                   lang: c.lang,
                 ))
             .toList();
@@ -92,7 +95,7 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
         _visibleCount = _pageSize;
       });
     } catch (e) {
-      print("⚠️ Erro em _load: $e");
+      debugPrint("⚠️ Erro em _load: $e");
       setState(() => _loading = false);
     }
   }
@@ -112,7 +115,6 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
     }
   }
 
-  /// 🔹 Favoritar/desfavoritar mangá
   Future<void> _toggleFavorite() async {
     if (_index == null) return;
 
@@ -131,6 +133,9 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        backgroundColor: isFav
+            ? Theme.of(context).colorScheme.errorContainer
+            : Theme.of(context).colorScheme.primaryContainer,
         content: Text(
           isFav ? "Removido dos favoritos" : "Adicionado aos favoritos",
         ),
@@ -138,7 +143,6 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
     );
   }
 
-  /// 🔹 Favoritar capítulo
   void _toggleChapterFavorite(ChapterMeta c) async {
     if (_index == null) return;
     final isFav = _index!.favoriteChapters.contains(c.id);
@@ -154,62 +158,100 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
     await saveIndex(widget.mangaId, _index!);
   }
 
-  /// 🔹 Mostra detalhes em um modal
-  void _showDetails(MangaMeta meta) async {
+  /// 🔹 Detalhes modernizados
+  void _showDetails(MangaMeta meta) {
+    final colors = Theme.of(context).colorScheme;
+
     String? original = meta.getDescription(meta.lang);
     String? translated = meta.getDescription(_lang);
-
-    if (translated == null && original != null) {
-      try {
-        final result =
-            await translator.translate(original, to: _lang.split('-').first);
-        translated = result.text;
-
-        setState(() {
-          _index?.meta = meta.withDescription(_lang, translated ?? original);
-        });
-      } catch (e) {
-        translated = original;
-      }
-    }
-
-    if (!mounted) return;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        minChildSize: 0.5,
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            controller: controller,
             children: [
               if (meta.coverUrl != null)
-                Center(child: Image.network(meta.coverUrl!, height: 200)),
-              const SizedBox(height: 12),
-              Text(meta.title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              if (meta.author != null) Text("Autor: ${meta.author}"),
-              Text("Idioma original: ${langNames[meta.lang] ?? meta.lang}"),
-              const SizedBox(height: 12),
+                Center(
+                  child: Hero(
+                    tag: meta.id,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(meta.coverUrl!,
+                          height: 220, fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Text(
+                meta.title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.primary,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  if (meta.author != null)
+                    Expanded(
+                      child: Text("Autor: ${meta.author}",
+                          style: Theme.of(context).textTheme.bodyMedium),
+                    ),
+                  Text(
+                    "Idioma: ${langNames[meta.lang] ?? meta.lang}",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
               if (original != null) ...[
                 Text("Descrição original:",
                     style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 4),
-                Text(original, style: const TextStyle(fontSize: 13)),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
+                Text(original,
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 16),
               ],
-              if (translated != null) ...[
+              if (translated != null && translated != original) ...[
                 Text("Descrição em ${langNames[_lang] ?? _lang}:",
                     style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 4),
-                Text(translated, style: const TextStyle(fontSize: 14)),
+                const SizedBox(height: 6),
+                Text(translated,
+                    style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 16),
               ],
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                children: meta.tags.map((t) => Chip(label: Text(t))).toList(),
-              ),
+              if (meta.tags.isNotEmpty) ...[
+                Text("Tags:",
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: meta.tags
+                      .map(
+                        (t) => Chip(
+                          label: Text(t),
+                          backgroundColor:
+                              colors.primaryContainer.withOpacity(0.3),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ],
           ),
         ),
@@ -217,12 +259,15 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
     );
   }
 
-  /// 🔹 Adicionar à biblioteca
   Future<void> _addToLibrary() async {
     if (_index != null) {
       await saveIndex(widget.mangaId, _index!);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Adicionado à Biblioteca")),
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          content: const Text("Adicionado à Biblioteca"),
+        ),
       );
     }
   }
@@ -257,8 +302,6 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
               isFavorite ? Icons.star : Icons.star_border,
               color: isFavorite ? Colors.amber : null,
             ),
-            tooltip:
-                isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos",
             onPressed: _toggleFavorite,
           ),
         ],
@@ -269,7 +312,6 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
           controller: _scrollController,
           padding: const EdgeInsets.all(12),
           children: [
-            // HEADER
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -317,13 +359,11 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Idioma
             Card(
-              elevation: 2,
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _lang,
@@ -351,43 +391,46 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // TOTAL DE CAPÍTULOS
             Text("Total de capítulos: ${idx.chapters.length}",
                 style: Theme.of(context).textTheme.bodyMedium),
             const Divider(height: 24),
-
-            // LISTA DE CAPÍTULOS
             ...chapters.map((c) {
               final displayTitle = (c.title != null && c.title!.isNotEmpty)
-                  ? "Cap. ${c.number ?? ''} - ${c.title}"
-                  : "Cap. ${c.number ?? c.id}";
+                  ? "${c.number ?? ''} - ${c.title}"
+                  : (c.number ?? c.id);
 
               final isFavChapter = idx.favoriteChapters.contains(c.id);
 
               return AnimatedBuilder(
                 animation: DownloadManager.instance,
                 builder: (context, _) {
-                  final downloading =
-                      DownloadManager.instance.status.contains(c.id);
+                  final progress =
+                      DownloadManager.instance.chapterProgress[c.id] ?? 0.0;
+                  final chapStatus =
+                      DownloadManager.instance.chapterStatus[c.id] ?? "";
 
                   Widget trailingWidget;
-
-                  if (downloading) {
-                    trailingWidget = const SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                  if (chapStatus == "Baixando") {
+                    trailingWidget = SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          value: progress > 0 && progress < 1 ? progress : null),
                     );
-                  } else if (c.pages > 0) {
-                    trailingWidget =
-                        Image.asset("assets/logo.png", width: 28, height: 28);
+                  } else if (chapStatus == "Concluído" || c.pages > 0) {
+                    trailingWidget = Icon(Icons.check_circle,
+                        size: 22,
+                        color: Theme.of(context).colorScheme.primary);
+                  } else if (chapStatus == "Erro") {
+                    trailingWidget = Icon(Icons.error,
+                        size: 22, color: Theme.of(context).colorScheme.error);
                   } else {
                     trailingWidget = IconButton(
-                      icon: const Icon(Icons.download),
-                      onPressed: () async {
-                        DownloadManager.instance.api ??= MangaDexClient();
-
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.download, size: 22),
+                      onPressed: () {
                         DownloadManager.instance.enqueue([
                           DownloadTask(
                             widget.mangaId,
@@ -399,53 +442,53 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
                             ),
                           ),
                         ]);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Capítulo adicionado à fila")),
-                        );
-
-                        DownloadManager.instance.addListener(() async {
-                          if (!DownloadManager.instance.running) {
-                            await _load(); // 🔹 atualiza pages
-                          }
-                        });
                       },
                     );
                   }
 
                   return ListTile(
-                    leading: Icon(
-                      c.pages > 0 ? Icons.menu_book : Icons.menu_book_outlined,
-                      color: c.pages > 0 ? Colors.green : null,
-                    ),
+                    leading: Icon(Icons.menu_book,
+                        color: c.pages > 0 || chapStatus == "Concluído"
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey),
                     title: Text(displayTitle),
                     subtitle: Text(
                       c.pages > 0
                           ? "${c.pages} páginas"
-                          : "Capítulo não baixado",
+                          : (chapStatus == "Baixando"
+                              ? "Baixando..."
+                              : "Não baixado"),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            isFavChapter ? Icons.star : Icons.star_border,
-                            color: isFavChapter ? Colors.amber : null,
+                    trailing: SizedBox(
+                      width: 100,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: Icon(
+                              isFavChapter ? Icons.star : Icons.star_border,
+                              color: isFavChapter ? Colors.amber : null,
+                              size: 22,
+                            ),
+                            onPressed: () => _toggleChapterFavorite(c),
                           ),
-                          onPressed: () => _toggleChapterFavorite(c),
-                        ),
-                        trailingWidget,
-                      ],
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Center(child: trailingWidget),
+                          ),
+                        ],
+                      ),
                     ),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ReaderPage(
-                            mangaId: widget.mangaId,
-                            chapter: c,
-                          ),
+                          builder: (_) =>
+                              ReaderPage(mangaId: widget.mangaId, chapter: c),
                         ),
                       );
                     },
@@ -453,7 +496,6 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
                 },
               );
             }),
-
             if (_visibleCount < idx.chapters.length)
               Column(
                 children: [
@@ -467,28 +509,6 @@ class _MangaDetailPageState extends State<MangaDetailPage> {
                   ),
                 ],
               ),
-
-            // ✅ Barra de download em andamento
-            AnimatedBuilder(
-              animation: DownloadManager.instance,
-              builder: (context, _) {
-                if (!DownloadManager.instance.running) {
-                  return const SizedBox.shrink();
-                }
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 16),
-                  child: ListTile(
-                    leading: const Icon(Icons.downloading, color: Colors.blue),
-                    title: Text(DownloadManager.instance.status),
-                    subtitle: LinearProgressIndicator(
-                      value: DownloadManager.instance.progress,
-                      backgroundColor: Colors.grey[300],
-                      color: Colors.blueAccent,
-                    ),
-                  ),
-                );
-              },
-            ),
           ],
         ),
       ),
