@@ -27,10 +27,40 @@ class MangaDexClient implements MangaSourceClient {
     return "https://uploads.mangadex.org/covers/${d['id']}/$fileName.512.jpg";
   }
 
-  @override
-  Future<List<MangaMeta>> listPopular({int page = 1}) async {
+  /// 🔹 Pega o último capítulo publicado de um mangá
+  Future<MdChapter?> _fetchLastChapter(String mangaId, String lang) async {
     final uri = Uri.parse(
-      '$_apiBase/manga?limit=20&offset=${(page - 1) * 20}&order[followedCount]=desc&includes[]=cover_art',
+      '$_apiBase/manga/$mangaId/feed?limit=1&translatedLanguage[]=$lang&order[chapter]=desc',
+    );
+
+    final r = await _http.get(uri).timeout(const Duration(seconds: 15));
+    if (r.statusCode != 200) return null;
+
+    final j = jsonDecode(r.body) as Map<String, dynamic>;
+    final data = (j['data'] as List?) ?? [];
+    if (data.isEmpty) return null;
+
+    final d = data.first;
+    final attrs = d['attributes'] as Map;
+    return MdChapter(
+      id: d['id'],
+      chapter: attrs['chapter'] as String?,
+      title: attrs['title'] as String?,
+      lang: lang,
+    );
+  }
+
+  @override
+  Future<List<MangaMeta>> listPopular({
+    int page = 1,
+    String lang = 'pt-br',
+    String order = 'followedCount',
+  }) async {
+    final uri = Uri.parse(
+      '$_apiBase/manga?limit=20&offset=${(page - 1) * 20}'
+      '&availableTranslatedLanguage[]=$lang'
+      '&order[$order]=desc'
+      '&includes[]=cover_art',
     );
 
     final r = await _http.get(uri).timeout(const Duration(seconds: 20));
@@ -42,22 +72,40 @@ class MangaDexClient implements MangaSourceClient {
     return Future.wait(data.map((d) async {
       final attrs = d['attributes'] as Map;
       final titleMap = (attrs['title'] as Map?) ?? {};
-      String title = titleMap['en'] ?? titleMap.values.first ?? 'Sem título';
+      String title = titleMap[lang] ??
+          titleMap['en'] ??
+          titleMap.values.first ??
+          'Sem título';
 
       final coverUrl = await _getCover(d);
+
+      // 🔹 último capítulo
+      final lastChapter = await _fetchLastChapter(d['id'], lang);
 
       return MangaMeta(
         id: d['id'],
         title: title,
         coverUrl: coverUrl,
+        tags: lastChapter != null && lastChapter.chapter != null
+            ? ["Último cap.: ${lastChapter.chapter}"]
+            : [],
       );
     }));
   }
 
   @override
-  Future<List<MangaMeta>> search(String query, {int page = 1}) async {
+  Future<List<MangaMeta>> search(
+    String query, {
+    int page = 1,
+    String lang = 'pt-br',
+    String order = 'followedCount',
+  }) async {
     final uri = Uri.parse(
-      '$_apiBase/manga?limit=20&offset=${(page - 1) * 20}&title=${Uri.encodeQueryComponent(query)}&includes[]=cover_art',
+      '$_apiBase/manga?limit=20&offset=${(page - 1) * 20}'
+      '&title=${Uri.encodeQueryComponent(query)}'
+      '&availableTranslatedLanguage[]=$lang'
+      '&order[$order]=desc'
+      '&includes[]=cover_art',
     );
 
     final r = await _http.get(uri).timeout(const Duration(seconds: 20));
@@ -69,14 +117,23 @@ class MangaDexClient implements MangaSourceClient {
     return Future.wait(data.map((d) async {
       final attrs = d['attributes'] as Map;
       final titleMap = (attrs['title'] as Map?) ?? {};
-      String title = titleMap['en'] ?? titleMap.values.first ?? 'Sem título';
+      String title = titleMap[lang] ??
+          titleMap['en'] ??
+          titleMap.values.first ??
+          'Sem título';
 
       final coverUrl = await _getCover(d);
+
+      // 🔹 último capítulo
+      final lastChapter = await _fetchLastChapter(d['id'], lang);
 
       return MangaMeta(
         id: d['id'],
         title: title,
         coverUrl: coverUrl,
+        tags: lastChapter != null && lastChapter.chapter != null
+            ? ["Último cap.: ${lastChapter.chapter}"]
+            : [],
       );
     }));
   }
@@ -135,6 +192,12 @@ class MangaDexClient implements MangaSourceClient {
         .toList();
 
     final coverUrl = await _getCover(d);
+
+    // 🔹 pega último capítulo aqui também
+    final lastChapter = await _fetchLastChapter(mangaId, lang);
+    if (lastChapter != null && lastChapter.chapter != null) {
+      tags.insert(0, "Último cap.: ${lastChapter.chapter}");
+    }
 
     return MangaMeta(
       id: mangaId,
@@ -210,7 +273,7 @@ class MangaDexClient implements MangaSourceClient {
       'manga': mangaId,
       'translatedLanguage[]': lang,
       'order[chapter]': 'asc',
-      'limit': '0', // não traz dados, só conta
+      'limit': '0',
       'offset': '0',
     });
 

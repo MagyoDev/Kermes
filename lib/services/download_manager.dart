@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
 import '../api/manga_source.dart';
+import '../api/mangadex_client.dart'; // 🔹 fallback
 import '../models/models.dart';
 import 'storage.dart';
 
@@ -18,54 +20,60 @@ class DownloadManager extends ChangeNotifier {
   factory DownloadManager() => instance;
   DownloadManager._internal();
 
-  late MangaSourceClient api;
-  final List<DownloadTask> _queue = [];
+  MangaSourceClient? api;
+  final Queue<DownloadTask> _queue = Queue();
   final List<ChapterMeta> completed = [];
 
-  bool _running = false;
+  bool running = false; // 🔹 público para UI
   double progress = 0.0;
   int done = 0;
   String status = 'Parado';
   bool convertWebp = false;
 
+  /// Adiciona novas tarefas à fila
   void enqueue(Iterable<DownloadTask> tasks) {
     _queue.addAll(tasks);
     _run();
   }
 
   void _run() {
-    if (_running) return;
-    _running = true;
+    if (running) return;
+    running = true;
     _loop();
   }
 
   Future<void> _loop() async {
     try {
       while (_queue.isNotEmpty) {
-        final task = _queue.removeAt(0);
+        final task = _queue.removeFirst();
         status = 'Baixando cap. ${task.chapter.chapter ?? task.chapter.id}';
         progress = 0;
         notifyListeners();
 
-        final chap = await _downloadChapter(task);
+        try {
+          final chap = await _downloadChapter(task);
+          done++;
+          completed.add(chap);
+          status = 'Cap. ${task.chapter.chapter ?? task.chapter.id} concluído';
+        } catch (e, st) {
+          status = '❌ Erro no capítulo ${task.chapter.id}: $e';
+          debugPrintStack(label: 'DownloadManager erro', stackTrace: st);
+        }
 
-        done++;
-        completed.add(chap);
         notifyListeners();
-
         await Future.delayed(const Duration(milliseconds: 200));
       }
-      status = 'Concluído';
-    } catch (e) {
-      status = 'Erro: $e';
+      status = '✅ Todos concluídos';
     } finally {
-      _running = false;
+      running = false;
       notifyListeners();
     }
   }
 
   Future<ChapterMeta> _downloadChapter(DownloadTask t) async {
-    final at = await api.atHomeServer(t.chapter.id);
+    final client = api ??= MangaDexClient();
+
+    final at = await client.atHomeServer(t.chapter.id);
     final dir = await chapterDir(t.mangaId, t.chapter.labelForFolder());
     final total = at.files.length;
 
@@ -82,19 +90,23 @@ class DownloadManager extends ChangeNotifier {
         continue;
       }
 
+      debugPrint("📥 Baixando: $url");
+
       final r = await http.get(url).timeout(const Duration(seconds: 30));
       if (r.statusCode != 200) {
         throw Exception('Erro ${r.statusCode} baixando $url');
       }
 
       var bytes = r.bodyBytes;
-      if (convertWebp) {
+      if (convertWebp && filename.toLowerCase().endsWith('.webp')) {
         try {
           final decoded = img.decodeImage(bytes);
           if (decoded != null) {
             bytes = img.encodeJpg(decoded, quality: 80);
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint("⚠️ Erro convertendo webp: $e");
+        }
       }
 
       await out.writeAsBytes(bytes);
@@ -102,53 +114,46 @@ class DownloadManager extends ChangeNotifier {
       notifyListeners();
     }
 
-    // 🔹 Atualiza índice e meta completo
+    // 🔹 Atualiza índice
     final idx = await loadIndex(t.mangaId);
 
-    // Se ainda não tiver metadados completos, busca no MangaDex
     if (idx.meta.title == 'Sem título' || idx.meta.author == null) {
       try {
         final fullMeta =
-            await api.fetchMangaMeta(t.mangaId, lang: idx.meta.lang);
+            await client.fetchMangaMeta(t.mangaId, lang: idx.meta.lang);
         idx.meta = fullMeta;
-      } catch (_) {
-        // fallback silencioso
+      } catch (e) {
+        debugPrint("⚠️ Falha ao atualizar meta: $e");
       }
     }
 
-    final chapters = List<ChapterMeta>.from(idx.chapters);
-    final label = t.chapter.labelForFolder();
-
-    final existing = chapters.indexWhere((c) => c.id == t.chapter.id);
-
     final record = ChapterMeta(
       id: t.chapter.id,
-      label: label,
+      label: t.chapter.labelForFolder(),
       number: t.chapter.chapter,
       title: t.chapter.title,
       pages: total,
+      lang: t.chapter.lang,
     );
 
+    final existing = idx.chapters.indexWhere((c) => c.id == t.chapter.id);
     if (existing >= 0) {
-      chapters[existing] = record;
+      idx.chapters[existing] = record;
     } else {
-      chapters.add(record);
+      idx.chapters.add(record);
     }
 
-    // 🔹 mantém a ordem numérica
-    chapters.sort((a, b) =>
+    idx.chapters.sort((a, b) =>
         (double.tryParse(a.number ?? '') ?? 1e9)
             .compareTo(double.tryParse(b.number ?? '') ?? 1e9));
 
-    idx.chapters = chapters;
     await saveIndex(t.mangaId, idx);
-
     return record;
   }
 
   String _ext(String name) {
     final n = name.toLowerCase();
-    if (convertWebp) return '.jpg';
+    if (convertWebp && n.endsWith('.webp')) return '.jpg';
     if (n.endsWith('.png')) return '.png';
     if (n.endsWith('.webp')) return '.webp';
     return '.jpg';

@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  translator: ^1.0.4+1
+
+  cached_network_image: ^3.3.1
 
   # HTTP para chamadas API
   http: ^1.2.2
@@ -28,6 +31,9 @@ dependencies:
   # Parser HTML para scraping (se necessário)
   html: ^0.15.4
 
+  # Detectar visibilidade de widgets (para progresso no modo vertical)
+  visibility_detector: ^0.4.0+2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -37,6 +43,9 @@ dev_dependencies:
 
   # Ícones automáticos
   flutter_launcher_icons: ^0.13.1
+
+  # Splash screen nativa
+  flutter_native_splash: ^2.4.0
 
 flutter:
   uses-material-design: true
@@ -48,5 +57,12 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/logo.png"
-  adaptive_icon_background: "#DC143C" # vermelho carmesim
+  adaptive_icon_background: "#F6F0E8" # fundo creme
   adaptive_icon_foreground: "assets/logo.png"
+
+# Configuração da splash screen
+flutter_native_splash:
+  color: "#F6F0E8"       # cor creme da logo
+  image: assets/logo.png # logo centralizada
+  android: true
+  ios: true
